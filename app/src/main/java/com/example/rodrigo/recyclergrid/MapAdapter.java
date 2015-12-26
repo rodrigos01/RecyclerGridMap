@@ -15,12 +15,10 @@ import java.util.Map;
  */
 public class MapAdapter extends RecyclerView.Adapter<MapAdapter.ViewHolder> {
 
-    public static int TYPE_MAIN_HEADER = 0;
-    public static int TYPE_HEADER = 1;
-    public static int TYPE_ITEM = 2;
+    public static int TYPE_HEADER = 0;
+    public static int TYPE_ITEM = 1;
 
     private int mCount;
-    private View mMainHeaderView;
     private Map<String, List<String>> mMap;
     private SparseArray<String> mHeaders;
 
@@ -28,9 +26,7 @@ public class MapAdapter extends RecyclerView.Adapter<MapAdapter.ViewHolder> {
     public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View v;
         LayoutInflater inflater = LayoutInflater.from(parent.getContext());
-        if(viewType == TYPE_MAIN_HEADER) {
-            return new ViewHolder(mMainHeaderView, viewType);
-        } else if(viewType == TYPE_HEADER) {
+        if(viewType == TYPE_HEADER) {
             v = inflater.inflate(R.layout.list_header, parent, false);
         } else {
             v = inflater.inflate(R.layout.list_item, parent, false);
@@ -45,7 +41,7 @@ public class MapAdapter extends RecyclerView.Adapter<MapAdapter.ViewHolder> {
             String key = mHeaders.get(position);
             holder.text.setText(key);
         } else if (type == TYPE_ITEM) {
-            int keyCount = 1;
+            int keyCount = 0;
             for (List<String> values: mMap.values()) {
                 keyCount++;
                 int itemPosition = position - keyCount;
@@ -67,17 +63,41 @@ public class MapAdapter extends RecyclerView.Adapter<MapAdapter.ViewHolder> {
 
     @Override
     public int getItemViewType(int position) {
-        if(position == 0) {
-            return TYPE_MAIN_HEADER;
-        } else if(mHeaders.get(position) != null) {
+        if(mHeaders.get(position) != null) {
             return TYPE_HEADER;
         }
         return TYPE_ITEM;
     }
 
+    public boolean isHeader(int position) {
+        return getItemViewType(position) == TYPE_HEADER;
+    }
+
+    public String getTitleForPosition(int position) {
+        if(isHeader(position)) {
+            return mHeaders.get(position);
+        } else {
+            for (int i = 0; i < mHeaders.size(); i++) {
+                int key = mHeaders.keyAt(i);
+                if(position > key) {
+                    int nextIndex = i + 1;
+                    if (nextIndex < mHeaders.size()) {
+                        int nextKey = mHeaders.keyAt(nextIndex);
+                        if (position < nextKey) {
+                            return mHeaders.get(key);
+                        }
+                    } else {
+                        return mHeaders.get(key);
+                    }
+                }
+            }
+            return null;
+        }
+    }
+
     public int getSpan(int position) {
         int type = getItemViewType(position);
-        if(type == TYPE_MAIN_HEADER || type == TYPE_HEADER) {
+        if(type == TYPE_HEADER) {
             return 2;
         }
         return 1;
@@ -89,7 +109,7 @@ public class MapAdapter extends RecyclerView.Adapter<MapAdapter.ViewHolder> {
 
     public void setMap(Map<String, List<String>> map) {
         mMap = map;
-        mCount = 1;
+        mCount = 0;
         mHeaders = new SparseArray<>();
         for (String key: mMap.keySet()) {
             //Index for the list headers
@@ -98,10 +118,6 @@ public class MapAdapter extends RecyclerView.Adapter<MapAdapter.ViewHolder> {
             mCount += values.size() + 1;
         }
         notifyDataSetChanged();
-    }
-
-    public void setMainHeaderView(View mainHeaderView) {
-        mMainHeaderView = mainHeaderView;
     }
 
     public class ViewHolder extends RecyclerView.ViewHolder {
